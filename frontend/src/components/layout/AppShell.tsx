@@ -7,6 +7,7 @@ import Flashbar from "@cloudscape-design/components/flashbar";
 import { useAppState, useAppDispatch } from "../../context/AppContext";
 import { getUIConfig } from "../../api/sessions";
 import type { UIConfig } from "../../types";
+import ModelSettingsModal from "./ModelSettingsModal";
 
 export default function AppShell() {
   const state = useAppState();
@@ -15,6 +16,7 @@ export default function AppShell() {
   const location = useLocation();
   const [uiConfig, setUiConfig] = useState<UIConfig | null>(null);
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const [modelSettingsOpen, setModelSettingsOpen] = useState(false);
 
   useEffect(() => {
     getUIConfig()
@@ -66,6 +68,10 @@ export default function AppShell() {
 
   return (
     <>
+      <ModelSettingsModal
+        visible={modelSettingsOpen}
+        onClose={() => setModelSettingsOpen(false)}
+      />
       {/*
        * TopNavigation is rendered outside AppLayout so CloudScape can
        * position it at z-index 1000 above the side navigation drawer.
@@ -81,6 +87,12 @@ export default function AppShell() {
             type: "button",
             text: brandTagline,
             disableUtilityCollapse: false,
+          },
+          {
+            type: "button",
+            iconName: "settings",
+            title: "Model settings",
+            onClick: () => setModelSettingsOpen(true),
           },
         ]}
         i18nStrings={{
