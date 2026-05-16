@@ -209,7 +209,6 @@ export default function InputPage() {
 
     try {
       await submitTranscript(transcript, studentName, sessionLabel || undefined);
-      navigate("/summary");
     } catch {
       setError("Analysis failed. Check that your LLM provider is running and reachable (see config.yaml).");
     }

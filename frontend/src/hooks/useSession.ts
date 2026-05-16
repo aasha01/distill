@@ -1,4 +1,6 @@
 import { useCallback } from "react";
+import { flushSync } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { useAppState, useAppDispatch } from "../context/AppContext";
 import { analyzeTranscriptStream } from "../api/analyze";
 import type { AnalyzePayload } from "../api/analyze";
@@ -6,6 +8,7 @@ import type { AnalyzePayload } from "../api/analyze";
 export function useSession() {
   const state = useAppState();
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   const submitTranscript = useCallback(
     async (transcript: string, studentName: string, sessionLabel?: string) => {
@@ -17,10 +20,27 @@ export function useSession() {
           student_name: studentName,
           session_label: sessionLabel,
         };
-        const result = await analyzeTranscriptStream(payload, (event) => {
-          dispatch({ type: "ADD_PROGRESS_STEP", step: event });
-        });
-        dispatch({ type: "SET_ANALYZE_RESULT", result });
+        const result = await analyzeTranscriptStream(
+          payload,
+          (event) => {
+            dispatch({ type: "ADD_PROGRESS_STEP", step: event });
+          },
+          (summaryEvent) => {
+            // flushSync ensures state is committed before navigate so
+            // SummaryPage's guard (if !result → redirect) doesn't fire
+            flushSync(() => {
+              dispatch({
+                type: "SET_SUMMARY_RESULT",
+                sessionId: summaryEvent.session_id,
+                summary: summaryEvent.summary,
+                concept_map: summaryEvent.concept_map,
+              });
+            });
+            navigate("/summary");
+          },
+        );
+        // Questions are now ready — update state and enable the button
+        dispatch({ type: "SET_QUESTIONS", questions: result.questions });
         dispatch({
           type: "ADD_FLASH",
           message: {
@@ -48,7 +68,7 @@ export function useSession() {
         dispatch({ type: "SET_ANALYZING", value: false });
       }
     },
-    [dispatch]
+    [dispatch, navigate]
   );
 
   const resetSession = useCallback(() => {

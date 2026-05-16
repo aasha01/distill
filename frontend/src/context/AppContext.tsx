@@ -13,6 +13,7 @@ export interface AppState {
   sessionId: string | null;
   studentName: string;
   analyzeResult: AnalyzeResult | null;
+  questionsReady: boolean;
   currentQuestionIndex: number;
   currentDifficulty: Difficulty;
   mcqResults: Record<number, MCQResult>;
@@ -30,6 +31,7 @@ const initialState: AppState = {
   sessionId: null,
   studentName: "Student",
   analyzeResult: null,
+  questionsReady: false,
   currentQuestionIndex: 0,
   currentDifficulty: "medium",
   mcqResults: {},
@@ -50,6 +52,8 @@ export type AppAction =
   | { type: "SET_ANALYZING"; value: boolean }
   | { type: "SET_TRANSCRIBING"; value: boolean }
   | { type: "SET_EVALUATING"; value: boolean }
+  | { type: "SET_SUMMARY_RESULT"; sessionId: string; summary: AnalyzeResult["summary"]; concept_map: AnalyzeResult["concept_map"] }
+  | { type: "SET_QUESTIONS"; questions: AnalyzeResult["questions"] }
   | { type: "SET_ANALYZE_RESULT"; result: AnalyzeResult }
   | { type: "SET_MCQ_RESULT"; questionId: number; result: MCQResult }
   | { type: "SET_VOICE_RESULT"; questionId: number; result: VoiceResult }
@@ -77,11 +81,38 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case "SET_EVALUATING":
       return { ...state, ui: { ...state.ui, isEvaluating: action.value } };
 
+    case "SET_SUMMARY_RESULT":
+      return {
+        ...state,
+        sessionId: action.sessionId,
+        questionsReady: false,
+        analyzeResult: {
+          session_id: action.sessionId,
+          summary: action.summary,
+          concept_map: action.concept_map,
+          questions: [],
+        },
+        currentQuestionIndex: 0,
+        currentDifficulty: "medium",
+        mcqResults: {},
+        voiceResults: {},
+      };
+
+    case "SET_QUESTIONS":
+      return {
+        ...state,
+        questionsReady: true,
+        analyzeResult: state.analyzeResult
+          ? { ...state.analyzeResult, questions: action.questions }
+          : state.analyzeResult,
+      };
+
     case "SET_ANALYZE_RESULT":
       return {
         ...state,
         sessionId: action.result.session_id,
         analyzeResult: action.result,
+        questionsReady: true,
         currentQuestionIndex: 0,
         currentDifficulty: "medium",
         mcqResults: {},

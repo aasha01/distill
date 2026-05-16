@@ -16,6 +16,7 @@ export default function SummaryPage() {
   const state = useAppState();
   const navigate = useNavigate();
   const result = state.analyzeResult;
+  const questionsReady = state.questionsReady;
 
   // Guard: if no analysis result, redirect to input
   useEffect(() => {
@@ -119,6 +120,9 @@ export default function SummaryPage() {
           onClick={() => navigate("/assessment")}
           iconAlign="right"
           iconName="angle-right"
+          disabled={!questionsReady}
+          loading={!questionsReady}
+          loadingText="Preparing quiz..."
         >
           Start Assessment
         </Button>

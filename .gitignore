@@ -89,7 +89,6 @@ test-results/
 dmypy.json
 
 # ─── IDE & Editors ───────────────────────────────────────────────────────────
-.vscode/
 .idea/
 *.swp
 *.swo

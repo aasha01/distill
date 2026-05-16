@@ -37,6 +37,16 @@ async def analyze_stream(body: AnalyzeRequest, request: Request) -> StreamingRes
         try:
             summary, concept_map = await analyzer.analyze(transcript, emit=emit)
             summary_dict = summary.model_dump()
+            concept_map_dict = concept_map.model_dump()
+
+            # Emit summary early so the frontend can navigate to /summary
+            # while questions are still being generated in the background.
+            await emit({
+                "stage": "summary_ready",
+                "session_id": session_id,
+                "summary": summary_dict,
+                "concept_map": concept_map_dict,
+            })
 
             questions = await assessor.generate(summary_dict, transcript, emit=emit)
             questions_dicts = [q.model_dump() for q in questions]
@@ -51,7 +61,7 @@ async def analyze_stream(body: AnalyzeRequest, request: Request) -> StreamingRes
                 topics_covered=summary.topics_covered,
                 questions=questions_dicts,
                 summary=summary_dict,
-                concept_map=concept_map.model_dump(),
+                concept_map=concept_map_dict,
             )
 
             await emit({
@@ -60,7 +70,7 @@ async def analyze_stream(body: AnalyzeRequest, request: Request) -> StreamingRes
                     "session_id": session_id,
                     "summary": summary_dict,
                     "questions": questions_dicts,
-                    "concept_map": concept_map.model_dump(),
+                    "concept_map": concept_map_dict,
                 },
             })
         except Exception as exc:

@@ -1,5 +1,5 @@
 import { apiClient } from "../config/api";
-import type { AnalyzeResult } from "../types";
+import type { AnalyzeResult, SummaryData, ConceptMap } from "../types";
 
 export interface AnalyzePayload {
   transcript: string;
@@ -15,6 +15,12 @@ export interface ProgressEvent {
   total_chunks?: number;
 }
 
+export interface SummaryReadyEvent {
+  session_id: string;
+  summary: SummaryData;
+  concept_map: ConceptMap;
+}
+
 export async function analyzeTranscript(payload: AnalyzePayload): Promise<AnalyzeResult> {
   const { data } = await apiClient.post<AnalyzeResult>("/api/analyze", payload);
   return data;
@@ -22,11 +28,14 @@ export async function analyzeTranscript(payload: AnalyzePayload): Promise<Analyz
 
 /**
  * Streams progress events from /api/analyze/stream using fetch + ReadableStream.
- * Calls onProgress for each stage event, resolves with the final AnalyzeResult.
+ * - onProgress: called for each stage progress event
+ * - onSummaryReady: called as soon as summary + concept map are ready (before questions)
+ * - resolves with the final AnalyzeResult (including questions) when stream ends
  */
 export async function analyzeTranscriptStream(
   payload: AnalyzePayload,
   onProgress: (event: ProgressEvent) => void,
+  onSummaryReady: (event: SummaryReadyEvent) => void,
 ): Promise<AnalyzeResult> {
   const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || "http://localhost:8000";
   const response = await fetch(`${baseUrl}/api/analyze/stream`, {
@@ -54,10 +63,19 @@ export async function analyzeTranscriptStream(
     for (const part of parts) {
       for (const line of part.split("\n")) {
         if (!line.startsWith("data: ")) continue;
-        const event = JSON.parse(line.slice(6)) as ProgressEvent & { result?: AnalyzeResult };
-        if (event.stage === "done" && event.result) return event.result;
-        if (event.stage === "error") throw new Error(event.message);
-        onProgress(event);
+        const raw = JSON.parse(line.slice(6)) as ProgressEvent & {
+          result?: AnalyzeResult;
+          session_id?: string;
+          summary?: SummaryData;
+          concept_map?: ConceptMap;
+        };
+        if (raw.stage === "summary_ready" && raw.session_id && raw.summary && raw.concept_map) {
+          onSummaryReady({ session_id: raw.session_id, summary: raw.summary, concept_map: raw.concept_map });
+          continue;
+        }
+        if (raw.stage === "done" && raw.result) return raw.result;
+        if (raw.stage === "error") throw new Error(raw.message);
+        onProgress(raw);
       }
     }
   }
