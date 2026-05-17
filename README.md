@@ -221,7 +221,7 @@ distill/
 
 | Requirement             | Version | Notes                                     |
 | ----------------------- | ------- | ----------------------------------------- |
-| Python                  | 3.10+   | 3.10 from python.org recommended on macOS |
+| Python                  | 3.10+   | **3.12 recommended**. Tested on 3.10–3.13. On macOS use python.org build. |
 | Node.js                 | 20+     | LTS recommended                           |
 | LM Studio **or** Ollama | latest  | For local LLMs (free, no API key)         |
 | Microphone              | —       | For Teach-It-Back voice answers           |
@@ -423,6 +423,29 @@ output, often hitting the token limit before the JSON is written — causing par
 
 > `no_think_mode` has **no effect** on standard models (Ollama, OpenAI, Anthropic, Gemini).
 > Leave it `false` or omit it entirely for those.
+
+---
+
+## Switching Models from the UI
+
+You can change the LLM provider and model at runtime without editing `config.yaml` or restarting the backend:
+
+1. Click the **⚙️ gear icon** in the top-right corner of the app
+2. Select a **Provider** (Ollama, LM Studio, OpenAI, Anthropic, Gemini)
+3. Select a **Model** from the dropdown:
+   - **Ollama/LM Studio** — fetched live from the running server (only loaded/downloaded models appear)
+   - **OpenAI/Anthropic/Gemini** — common models pre-listed
+4. Click **Apply** — the change takes effect immediately for the next analysis
+
+> Changes apply for the current session only and are **not saved to disk**. Restarting the backend reverts to `config.yaml`. To make a change permanent, edit `config.yaml`.
+
+---
+
+## Summary-First Flow (Background Quiz)
+
+When you submit a transcript, the app navigates to the summary page **as soon as the summary and concept map are ready** — you don't wait for quiz questions to finish generating. While you read the summary, questions are prepared in the background.
+
+The **Start Assessment** button shows a `Preparing quiz...` loading state until questions are ready, then enables automatically. This saves 30–90 seconds of staring at a spinner.
 
 ---
 
